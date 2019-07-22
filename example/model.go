@@ -1,13 +1,15 @@
-package in
+package example
 
 import "time"
 
-type Entity struct {
-	Kind  int64
-	Value string
+type User struct {
+	Id        int64
+	Name      string
+	UserLabel Label
+	At        time.Time
 }
 
-type Message struct {
-	Entity    Entity
-	CreatedAt time.Time
+type Label struct {
+	Id   int64
+	Name string
 }

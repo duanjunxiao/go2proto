@@ -52,14 +52,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pkgs, err := loadPackages(pwd, pkgFlags)
+	pkg, err := loadPackages(pwd, pkgFlags)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	msgs := getMessages(pkgs, *filter)
+	msg := getMessages(pkg, *filter)
 
-	if err := writeOutput(msgs, *protoFolder); err != nil {
+	if err := writeOutput(msg, *protoFolder); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -94,20 +94,36 @@ type field struct {
 func getMessages(pkg []*packages.Package, filter string) []*message {
 	var out []*message
 	seen := map[string]struct{}{}
-	for _, p := range pkg {
-		for _, t := range p.TypesInfo.Defs {
+	for p, item := range pkg {
+		fmt.Println("------", p, "item", item.PkgPath)
+		for k, t := range item.TypesInfo.Defs {
+			fmt.Println("item.TypesInfo.Defs", "k ", k, "t ", t)
 			if t == nil {
 				continue
 			}
+			fmt.Println(" t.Pkg().Name()", t.Type().Underlying())
 			if !t.Exported() {
 				continue
 			}
-			if _, ok := seen[t.Name()]; ok {
-				continue
-			}
 			if s, ok := t.Type().Underlying().(*types.Struct); ok {
-				seen[t.Name()] = struct{}{}
+				array := strings.Split(t.Type().String(), ".")
+				if len(array) == 0 {
+					continue
+				}
+				pkgPath := strings.Join(array[:len(array)-1], ".")
+				fmt.Println("_pkg", pkgPath)
+				if pkgPath != item.PkgPath {
+					continue
+				}
+				x := t.Type().String()
+				if _, ok := seen[x]; ok {
+					continue
+				}
+				seen[x] = struct{}{}
 				if filter == "" || strings.Contains(t.Name(), filter) {
+					//fmt.Println("-----------------------")
+					//fmt.Println("t=", t, "s=", t)
+					//fmt.Println("-----------------------")
 					out = appendMessage(out, t, s)
 				}
 			}
@@ -149,9 +165,6 @@ func toProtoFieldTypeName(f *types.Var) string {
 		name := splitNameHelper(f)
 		return normalizeType(strings.TrimLeft(name, "[]"))
 	case *types.Pointer, *types.Struct:
-		// f.Type().String() github.com/duanjunxiao/go2proto/example.Entity
-		// f.Type().String() time.Time
-		fmt.Println("f.Type().String()", f.Type().String())
 		name := splitNameHelper(f)
 		return normalizeType(name)
 	}
@@ -171,7 +184,6 @@ func splitNameHelper(f *types.Var) string {
 }
 
 func normalizeType(name string) string {
-	name = strings.ToLower(name)
 	switch name {
 	case "int":
 		return "int64"
@@ -179,7 +191,7 @@ func normalizeType(name string) string {
 		return "float"
 	case "float64":
 		return "double"
-	case "time":
+	case "Time": // time.Time to int64
 		return "int64"
 	default:
 		return name
@@ -191,15 +203,17 @@ func isRepeated(f *types.Var) bool {
 	return ok
 }
 
-func toProtoFieldName(name string) string {
+func toProtoFieldName(name string) (s string) {
 	if len(name) == 2 {
-		return strings.ToLower(name)
+		s = strings.ToLower(name)
+		return
 	}
-	r, n := utf8.DecodeRuneInString(name)
-	return string(unicode.ToLower(r)) + name[n:]
+	r, size := utf8.DecodeRuneInString(name)
+	s = string(unicode.ToLower(r)) + name[size:]
+	return
 }
 
-func writeOutput(msgs []*message, path string) error {
+func writeOutput(msg []*message, path string) error {
 	msgTemplate := `syntax = "proto3";
 package proto;
 
@@ -215,7 +229,7 @@ message {{.Name}} {
 }
 {{end}}
 `
-	tmpl, err := template.New("test").Parse(msgTemplate)
+	tmpl, err := template.New("temp").Parse(msgTemplate)
 	if err != nil {
 		panic(err)
 	}
@@ -226,5 +240,5 @@ message {{.Name}} {
 	}
 	defer f.Close()
 
-	return tmpl.Execute(f, msgs)
+	return tmpl.Execute(f, msg)
 }
