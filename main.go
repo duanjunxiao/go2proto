@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"go/token"
 	"go/types"
 	"log"
@@ -90,10 +91,10 @@ type field struct {
 	IsRepeated bool
 }
 
-func getMessages(pkgs []*packages.Package, filter string) []*message {
+func getMessages(pkg []*packages.Package, filter string) []*message {
 	var out []*message
 	seen := map[string]struct{}{}
-	for _, p := range pkgs {
+	for _, p := range pkg {
 		for _, t := range p.TypesInfo.Defs {
 			if t == nil {
 				continue
@@ -147,8 +148,10 @@ func toProtoFieldTypeName(f *types.Var) string {
 	case *types.Slice:
 		name := splitNameHelper(f)
 		return normalizeType(strings.TrimLeft(name, "[]"))
-
 	case *types.Pointer, *types.Struct:
+		// f.Type().String() github.com/duanjunxiao/go2proto/example.Entity
+		// f.Type().String() time.Time
+		fmt.Println("f.Type().String()", f.Type().String())
 		name := splitNameHelper(f)
 		return normalizeType(name)
 	}
@@ -168,6 +171,7 @@ func splitNameHelper(f *types.Var) string {
 }
 
 func normalizeType(name string) string {
+	name = strings.ToLower(name)
 	switch name {
 	case "int":
 		return "int64"
@@ -175,6 +179,8 @@ func normalizeType(name string) string {
 		return "float"
 	case "float64":
 		return "double"
+	case "time":
+		return "int64"
 	default:
 		return name
 	}

@@ -7,6 +7,8 @@ Generate Protobuf messages from given go structs. No RPC, not gogo syntax, just 
 ```sh
 GO111MODULE=off go get -u github.com/anjmao/go2proto
 go2proto -f ${PWD}/example/out -p github.com/anjmao/go2proto/example/in
+
+go2proto -f . -p .
 ```
 
 ### Note
