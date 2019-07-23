@@ -1,15 +1,17 @@
-package example
+package project
 
-import "time"
-
-type User struct {
-	Id        int64
-	Name      string
-	UserLabel Label
-	At        time.Time
-}
+import (
+	"time"
+)
 
 type Label struct {
 	Id   int64
 	Name string
+}
+
+type User struct {
+	Id   int64
+	Tag  Label
+	List []Label
+	At   time.Time
 }

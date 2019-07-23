@@ -9,8 +9,8 @@ message Label {
 
 message User {
   int64 id = 1;
-  string name = 2;
-  Label userLabel = 3;
+  Label tag = 2;
+  repeated Label list = 3;
   int64 at = 4;
 }
 

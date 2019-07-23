@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"go/token"
 	"go/types"
 	"log"
@@ -94,14 +93,11 @@ type field struct {
 func getMessages(pkg []*packages.Package, filter string) []*message {
 	var out []*message
 	seen := map[string]struct{}{}
-	for p, item := range pkg {
-		fmt.Println("------", p, "item", item.PkgPath)
-		for k, t := range item.TypesInfo.Defs {
-			fmt.Println("item.TypesInfo.Defs", "k ", k, "t ", t)
+	for _, item := range pkg {
+		for _, t := range item.TypesInfo.Defs {
 			if t == nil {
 				continue
 			}
-			fmt.Println(" t.Pkg().Name()", t.Type().Underlying())
 			if !t.Exported() {
 				continue
 			}
@@ -111,8 +107,7 @@ func getMessages(pkg []*packages.Package, filter string) []*message {
 					continue
 				}
 				pkgPath := strings.Join(array[:len(array)-1], ".")
-				fmt.Println("_pkg", pkgPath)
-				if pkgPath != item.PkgPath {
+				if !strings.HasPrefix(pkgPath, item.PkgPath) && pkgPath != item.PkgPath {
 					continue
 				}
 				x := t.Type().String()
@@ -121,9 +116,6 @@ func getMessages(pkg []*packages.Package, filter string) []*message {
 				}
 				seen[x] = struct{}{}
 				if filter == "" || strings.Contains(t.Name(), filter) {
-					//fmt.Println("-----------------------")
-					//fmt.Println("t=", t, "s=", t)
-					//fmt.Println("-----------------------")
 					out = appendMessage(out, t, s)
 				}
 			}
@@ -134,8 +126,9 @@ func getMessages(pkg []*packages.Package, filter string) []*message {
 }
 
 func appendMessage(out []*message, t types.Object, s *types.Struct) []*message {
+	name := strings.TrimLeft(t.Type().String(), t.Pkg().Path())
 	msg := &message{
-		Name:   t.Name(),
+		Name:   name,
 		Fields: []*field{},
 	}
 
