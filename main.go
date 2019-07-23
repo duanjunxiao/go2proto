@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"go/token"
 	"go/types"
 	"log"
@@ -91,9 +92,31 @@ type field struct {
 }
 
 func getMessages(pkg []*packages.Package, filter string) []*message {
+	fmt.Println("getMessages", pkg)
 	var out []*message
 	seen := map[string]struct{}{}
 	for _, item := range pkg {
+		fmt.Println("Types", item.Types)
+		fmt.Println("TypesInfo")
+		fmt.Println(item.TypesInfo)
+		fmt.Println("TypesInfoDefs")
+		//fmt.Println(item.TypesInfo.Defs)
+		fmt.Println("-----------------")
+		for k, v := range item.TypesInfo.Defs {
+			fmt.Println("----------------------------")
+			fmt.Println("k", k)
+			if v == nil {
+				continue
+			}
+			fmt.Println("Type", v.Type())
+			fmt.Println("Name", v.Name())
+			fmt.Println("String", v.String())
+			fmt.Println("Pkg", v.Pkg())
+			fmt.Println("Id", v.Id())
+			fmt.Println("Parent", v.Parent())
+			fmt.Println("Pos", v.Pos())
+		}
+		continue
 		for _, t := range item.TypesInfo.Defs {
 			if t == nil {
 				continue
